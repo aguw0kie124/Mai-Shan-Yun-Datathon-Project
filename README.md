@@ -16,16 +16,14 @@ Key Insights:
   - Highlight top-cost ingredients to target for bulk buying.
   - Forecast ingredient demand based on sales trends.
 
-Datasets and Integration
+Datasets Used:
+  - Sales Data (.xlsx): Monthly menu item sales (May–October).
+  - Ingredient Data (.csv): Ingredient names, categories, and usage quantities.
+  - Shipment Data (.csv): Supplier information, frequency, and delivery schedules.
+  - Purchase Logs (.csv): Historical purchase quantities and prices.
 
-  Datasets Used:
-    - Sales Data (.xlsx): Monthly menu item sales (May–October).
-    - Ingredient Data (.csv): Ingredient names, categories, and usage quantities.
-    - Shipment Data (.csv): Supplier information, frequency, and delivery schedules.
-    - Purchase Logs (.csv): Historical purchase quantities and prices.
-
-  Integration Process:
-    - Cleaned and merged with pandas in api.py.
-    - Aggregated metrics (usage, cost, frequency) generated through FastAPI endpoints.
-    - Frontend retrieves and visualizes data dynamically via JSON responses.
+Integration Process:
+  - Cleaned and merged with pandas in api.py.
+  - Aggregated metrics (usage, cost, frequency) generated through FastAPI endpoints.
+  - Frontend retrieves and visualizes data dynamically via JSON responses.
 
