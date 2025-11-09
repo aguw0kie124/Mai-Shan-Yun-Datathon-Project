@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mai Shan Yun - Inventory Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f5;
+            color: #1a1a1a;
+        }
+
+        .header {
+            background: #000;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo { font-size: 1.25rem; font-weight: 600; }
+        .badge { background: #dc2626; padding: 0.4rem 1rem; border-radius: 4px; font-size: 0.875rem; }
+
+        .container { max-width: 1600px; margin: 0 auto; padding: 2rem; }
+        .title { font-size: 1.875rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .subtitle { color: #6b7280; margin-bottom: 2rem; }
+
+        .loading, .error {
+            text-align: center;
+            padding: 4rem;
+            font-size: 1.125rem;
+        }
+        .error { color: #dc2626; }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: #6b7280;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .wide { grid-column: 1 / -1; }
+
+        .alert {
+            padding: 1rem;
+            margin: 0.75rem 0;
+            border-radius: 6px;
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .alert-warning { background: #fef3c7; border-left: 4px solid #f59e0b; }
+        .alert-critical { background: #fee2e2; border-left: 4px solid #dc2626; }
+        .alert-success { background: #d1fae5; border-left: 4px solid #10b981; }
+        .alert strong { font-weight: 600; }
+
+        .chart { position: relative; height: 300px; margin-top: 1rem; }
+        .chart-tall { height: 400px; }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .tab {
+            padding: 0.75rem 1rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+
+        .tab.active { color: #000; border-bottom-color: #000; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background: #f9fafb; font-weight: 600; font-size: 0.875rem; }
+        tr:hover { background: #f9fafb; }
+
+        .cost-item {
+            padding: 1rem;
+            margin: 0.75rem 0;
+            background: #f9fafb;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cost-bar {
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .cost-fill {
+            height: 100%;
+            background: #000;
+            transition: width 0.3s;
+        }
+
+        .protein-grid {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            padding: 1.5rem 0;
+        }
+
+        .protein-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .protein-label {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .cost-summary {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+            .header { flex-direction: column; gap: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">麦山云 MAI SHAN YUN</div>
+        <div class="badge">ADMIN DASHBOARD</div>
+    </div>
+
+    <div class="container">
+        <h1 class="title">Inventory Dashboard</h1>
+        <p class="subtitle">Real-time inventory and sales analytics</p>
+
+        <div class="loading" id="loading">Loading dashboard...</div>
+        <div class="error" id="error" style="display:none;"></div>
+
+        <div id="dashboard" style="display:none;">
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-value" id="totalItems">-</div>
+                    <div class="metric-label">Menu Items</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="totalIngredients">-</div>
+                    <div class="metric-label">Ingredients</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="weeklyShipments">-</div>
+                    <div class="metric-label">Shipments/Week</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="alertCount">-</div>
+                    <div class="metric-label">Active Alerts</div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <h2>Critical Alerts</h2>
+                    <div id="alerts"></div>
+                </div>
+
+                <div class="card">
+                    <h2>Top Ingredient Usage</h2>
+                    <div class="chart">
+                        <canvas id="ingredientChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Protein Forecast</h2>
+                    <div id="proteinForecast"></div>
+                </div>
+
+                <div class="card">
+                    <h2>Shipment Schedule</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Ingredient</th>
+                                <th>Frequency</th>
+                                <th>Next Delivery</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedule"></tbody>
+                    </table>
+                </div>
+
+                <div class="card wide">
+                    <h2>Menu Performance</h2>
+                    <div class="tabs">
+                        <button class="tab active" onclick="showTab('sales')">Sales Trends</button>
+                        <button class="tab" onclick="showTab('ingredients')">Ingredient Matrix</button>
+                        <button class="tab" onclick="showTab('forecast')">Demand Forecast</button>
+                    </div>
+
+                    <div id="sales" class="tab-content active">
+                        <div class="chart chart-tall">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div id="ingredients" class="tab-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Menu Item</th>
+                                    <th>Key Ingredients</th>
+                                    <th>Protein (g)</th>
+                                    <th>Complexity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="matrix"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="forecast" class="tab-content">
+                        <div class="chart chart-tall">
+                            <canvas id="forecastChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Cost Analysis</h2>
+                    <div id="costs"></div>
+                    <div class="cost-summary" id="costSummary"></div>
+                </div>
+
+                <div class="card">
+                    <h2>Recommendations</h2>
+                    <div id="recommendations"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://127.0.0.1:8000';
+        const charts = {};
+
+        async function getJSON(path) {
+            const res = await fetch(API + path);
+            if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+            return res.json();
+        }
+
+        function showError(msg) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'none';
+            const errorEl = document.getElementById('error');
+            errorEl.style.display = 'block';
+            errorEl.textContent = msg;
+        }
+
+        function renderAlerts(alerts) {
+            const el = document.getElementById('alerts');
+            if (!alerts || alerts.length === 0) {
+                el.innerHTML = '<div class="alert alert-success"><span>✓</span><div>No alerts</div></div>';
+                return;
+            }
+            el.innerHTML = alerts.map(a => `
+                <div class="alert alert-${a.type || 'warning'}">
+                    <div style="font-weight:700;margin-right:0.5rem">${a.type === 'critical' ? '⚠️' : 'ℹ️'}</div>
+                    <div><strong>${a.title}</strong><div style="font-size:0.95rem;color:#374151">${a.message}</div></div>
+                </div>
+            `).join('');
+        }
+
+        function renderIngredientChart(data) {
+            const ctx = document.getElementById('ingredientChart').getContext('2d');
+            if (charts.ingredient) charts.ingredient.destroy();
+            charts.ingredient = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: data.labels || [], datasets: [{ label: 'Weekly Usage', data: data.data || [], backgroundColor: '#111827' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function renderSalesChart(data) {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            if (charts.sales) charts.sales.destroy();
+            charts.sales = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels || [],
+                    datasets: (data.datasets || []).map((d, i) => ({
+                        label: d.label,
+                        data: d.data,
+                        borderColor: ['#111827','#4b5563','#9ca3af','#6b7280'][i % 4],
+                        backgroundColor: 'transparent',
+                        tension: 0.3,
+                        fill: false
+                    }))
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function renderForecastChart(data) {
+            const ctx = document.getElementById('forecastChart').getContext('2d');
+            if (charts.forecast) charts.forecast.destroy();
+            charts.forecast = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels || [],
+                    datasets: [
+                        { label: 'Actual', data: data.actual || [], borderColor: '#111827', backgroundColor: '#11182720', tension: 0.3 },
+                        { label: 'Predicted', data: data.predicted || [], borderColor: '#6b7280', backgroundColor: '#6b728020', borderDash: [6,4], tension: 0.3 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function renderSchedule(schedule) {
+            const html = (schedule || []).length ? (schedule || []).map(s => `
+                <tr>
+                    <td>${s.ingredient}</td>
+                    <td>${s.frequency}</td>
+                    <td>${s.nextDelivery}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="3">No schedule data</td></tr>';
+            document.getElementById('schedule').innerHTML = html;
+        }
+
+        function renderCosts(costs) {
+            const list = (costs || []).map(c => `
+                <div class="cost-item">
+                    <div style="flex:1">
+                        <strong>${c.ingredient}</strong>
+                        <div style="font-size:0.875rem;color:#6b7280">${c.details}</div>
+                        <div class="cost-bar"><div class="cost-fill" style="width:${c.percentage || 0}%"></div></div>
+                    </div>
+                    <div style="font-weight:700">${c.cost}</div>
+                </div>
+            `).join('');
+            document.getElementById('costs').innerHTML = list || '<div>No cost data</div>';
+
+            const total = (costs || []).reduce((sum, c) => {
+                const n = parseInt(String(c.cost || '').replace(/\D/g, '')) || 0;
+                return sum + n;
+            }, 0);
+            document.getElementById('costSummary').innerHTML = `<strong>Total Weekly Cost: $${total}</strong>`;
+        }
+
+        function renderRecommendations(recs) {
+            const html = (recs || []).length ? (recs || []).map(r => `
+                <div class="alert alert-${r.type}">
+                    <div style="font-weight:700;margin-right:0.5rem">💡</div>
+                    <div><strong>${r.title}</strong><div style="font-size:0.95rem;color:#374151">${r.message}</div></div>
+                </div>
+            `).join('') : '<div class="alert alert-success"><span>✓</span><div>No recommendations</div></div>';
+            document.getElementById('recommendations').innerHTML = html;
+        }
+
+        function renderProteins(proteins) {
+            const p = proteins || {};
+            const html = `
+                <div class="protein-grid">
+                    ${p.beef ? `<div><div class="protein-value">${p.beef.amount}</div><div class="protein-label">Beef (${p.beef.shipments})</div></div>` : ''}
+                    ${p.chicken ? `<div><div class="protein-value">${p.chicken.amount}</div><div class="protein-label">Chicken (${p.chicken.shipments})</div></div>` : ''}
+                    ${p.pork ? `<div><div class="protein-value">${p.pork.amount}</div><div class="protein-label">Pork (${p.pork.shipments})</div></div>` : ''}
+                </div>
+            `;
+            document.getElementById('proteinForecast').innerHTML = html;
+        }
+
+        function renderMatrix(matrix) {
+            const html = (matrix || []).length ? (matrix || []).map(m => `
+                <tr>
+                    <td>${m.item}</td>
+                    <td>${m.ingredients.join(', ')}</td>
+                    <td>${m.protein}</td>
+                    <td>${m.complexity}</td>
+                </tr>
+            `).join('') : '<tr><td colspan="4">No data</td></tr>';
+            document.getElementById('matrix').innerHTML = html;
+        }
+
+        async function loadDashboard() {
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error');
+            const dashboardEl = document.getElementById('dashboard');
+
+            loadingEl.style.display = 'block';
+            errorEl.style.display = 'none';
+            dashboardEl.style.display = 'none';
+
+            try {
+                const [metrics, usage, proteins, schedule] = await Promise.all([
+                    getJSON('/api/metrics'),
+                    getJSON('/api/ingredient-usage'),
+                    getJSON('/api/protein-forecast'),
+                    getJSON('/api/shipment-schedule')
+                ]);
+
+                // Metrics
+                document.getElementById('totalItems').textContent = metrics.totalItems ?? '-';
+                document.getElementById('totalIngredients').textContent = metrics.totalIngredients ?? '-';
+                document.getElementById('weeklyShipments').textContent = metrics.weeklyShipments ?? '-';
+                document.getElementById('alertCount').textContent = metrics.alertCount ?? '-';
+
+                // Top ingredient usage chart
+                renderIngredientChart(usage);
+
+                // Protein forecast area
+                renderProteins(proteins);
+
+                // Shipment schedule table
+                renderSchedule(schedule);
+
+                loadingEl.style.display = 'none';
+                dashboardEl.style.display = 'block';
+            } catch (err) {
+                console.error('Dashboard load error:', err);
+                loadingEl.style.display = 'none';
+                dashboardEl.style.display = 'none';
+                errorEl.style.display = 'block';
+                errorEl.textContent = 'Cannot connect to backend. Make sure API is running at http://127.0.0.1:8000';
+            }
+        }
+
+        window.addEventListener('load', loadDashboard);
+    </script>
+</body>
+</html>
