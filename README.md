@@ -6,7 +6,7 @@ The Mai Shan Yun Inventory Intelligence Dashboard is a web application that turn
 
 ## Purpose and Key Insights
 **Purpose:**
-To provide restaurant managers with a single, interactive view of inventory operations by connecting ingredient data, shipments, and menu sales for smarter decision-making.
+To provide Mai-Shan-Yun's managers with a simple interactive view of inventory operations by connecting ingredient data, shipments, and menu sales for smarter decision-making.
 
 **Key Insights:**
   - Identify high-demand or low-stock ingredients before shortages occur.
@@ -19,7 +19,6 @@ To provide restaurant managers with a single, interactive view of inventory oper
   - **Sales Data (.xlsx)**: Monthly menu item sales (May–October).
   - **Ingredient Data (.csv)**: Ingredient names, categories, and usage quantities.
   - **Shipment Data (.csv)**: Supplier information, frequency, and delivery schedules.
-  - **Purchase Logs (.csv)**: Historical purchase quantities and prices.
 
 **Integration Process:**
   - Cleaned and merged with pandas in `api.py`.
@@ -48,7 +47,7 @@ git clone https://github.com/yourusername/Mai-Shan-Yun-Datathon-Project.git
 cd Mai-Shan-Yun-Datathon-Project
 ```
 
-2. **Install dependencies**
+2. **Install all dependencies**
 ```bash
 pip install fastapi uvicorn pandas numpy openpyxl
 ```
